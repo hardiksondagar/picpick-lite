@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PicPick Lite - Simple Photo Selector</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #242424;
+            --bg-tertiary: #2d2d2d;
+            --text-primary: #f5f5f5;
+            --text-muted: #888;
+            --gold: #d4a853;
+            --gold-dark: #b8943f;
+            --green: #4ade80;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--bg-tertiary);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        .logo span {
+            color: var(--text-muted);
+            font-weight: 400;
+            font-size: 0.9rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+        }
+
+        .stat {
+            color: var(--text-muted);
+        }
+
+        .stat strong {
+            color: var(--text-primary);
+        }
+
+        .stat.starred strong {
+            color: var(--gold);
+        }
+
+        .header-filters {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-filters.hidden {
+            display: none;
+        }
+
+        .grid-size-toggle {
+            display: flex;
+            gap: 2px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 2px;
+        }
+
+        .grid-size-btn {
+            padding: 6px 10px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .grid-size-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .grid-size-btn.active {
+            background: var(--gold-dark);
+            color: var(--bg-primary);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--gold-dark);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--bg-tertiary);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--gold-dark);
+        }
+
+        .btn-success {
+            background: var(--green);
+            color: var(--bg-primary);
+        }
+
+        .btn-success:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary.active {
+            background: var(--gold-dark);
+            border-color: var(--gold);
+        }
+
+        /* Welcome Screen */
+        .welcome {
+            display: none; /* Hidden by default, shown only if no session */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 70vh;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .welcome.visible {
+            display: flex;
+        }
+
+        .welcome h2 {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        .welcome p {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+
+        .welcome .btn-primary {
+            font-size: 1.1rem;
+            padding: 14px 32px;
+        }
+
+        .browser-warning {
+            background: #4a3000;
+            border: 1px solid var(--gold-dark);
+            border-radius: 8px;
+            padding: 16px 24px;
+            margin-top: 24px;
+            max-width: 400px;
+        }
+
+        .browser-warning strong {
+            color: var(--gold);
+        }
+
+        .shortcuts {
+            margin-top: 40px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .shortcuts kbd {
+            background: var(--bg-tertiary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+
+        .welcome-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .persistence-info {
+            margin-top: 30px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .loading-session {
+            margin-top: 20px;
+            color: var(--gold);
+            font-size: 1rem;
+        }
+
+        /* Photo Grid */
+        .grid-container {
+            padding: 20px;
+            display: none;
+        }
+
+        .grid-container.visible {
+            display: block;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        /* Grid size variations */
+        .photo-grid.grid-small {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .photo-grid.grid-large {
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .photo-card {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .photo-card:hover {
+            border-color: var(--bg-tertiary);
+        }
+
+        .photo-card.selected {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 168, 83, 0.3);
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-card .star-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--text-muted);
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .photo-card .star-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+            color: var(--gold);
+            transform: scale(1.1);
+        }
+
+        .photo-card.starred .star-btn {
+            background: var(--gold);
+            color: var(--bg-primary);
+        }
+
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal.visible {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+        }
+
+        .modal-info {
+            color: var(--text-muted);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0 10px;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-image-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .modal-image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .modal-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: var(--text-primary);
+            font-size: 2rem;
+            padding: 20px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .modal-nav:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-nav.prev {
+            left: 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .modal-nav.next {
+            right: 0;
+            border-radius: 8px 0 0 8px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        /* Filter Select */
+        .filter-select {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            min-width: 180px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .filter-select:hover {
+            border-color: var(--gold-dark);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        /* Hidden */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Image placeholder */
+        .img-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Load more button */
+        .load-more {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .load-more button {
+            padding: 12px 32px;
+            font-size: 1rem;
+        }
+
+        /* Date Separator */
+        .date-separator {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 10px 0;
+        }
+
+        .date-separator.has-margin {
+            margin-top: 20px;
+            padding-top: 20px;
+        }
+
+        .date-separator::before,
+        .date-separator::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--gold-dark), transparent);
+        }
+
+        .date-separator-text {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        /* Time Separator */
+        .time-separator {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .time-separator::before,
+        .time-separator::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--bg-tertiary);
+        }
+
+        .time-separator-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* ==================== MOBILE RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            /* Header - Stack vertically on mobile */
+            header {
+                flex-direction: column;
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .header-left {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+
+            .logo {
+                font-size: 1.2rem;
+            }
+
+            .stats {
+                flex-wrap: wrap;
+                gap: 12px;
+                font-size: 0.85rem;
+            }
+
+            /* Filters - Full width, wrap */
+            .header-filters {
+                width: 100%;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .filter-select {
+                flex: 1;
+                min-width: 120px;
+                height: 44px;
+            }
+
+            .header-filters .btn-secondary {
+                height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .grid-size-toggle {
+                flex: 1;
+                justify-content: center;
+            }
+
+            /* Actions - Full width */
+            .actions {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .actions button {
+                flex: 1;
+                min-width: 120px;
+                padding: 10px 12px;
+                font-size: 0.85rem;
+            }
+
+            /* Welcome screen */
+            .welcome {
+                padding: 20px;
+                min-height: 60vh;
+            }
+
+            .welcome h2 {
+                font-size: 1.5rem;
+            }
+
+            .welcome p {
+                font-size: 0.9rem;
+                margin-bottom: 24px;
+            }
+
+            .welcome .btn-primary {
+                font-size: 1rem;
+                padding: 12px 24px;
+                width: 100%;
+            }
+
+            .welcome-buttons {
+                width: 100%;
+            }
+
+            .browser-warning {
+                font-size: 0.85rem;
+                padding: 12px 16px;
+            }
+
+            .shortcuts {
+                font-size: 0.75rem;
+            }
+
+            /* Photo Grid - Always use small grid on mobile */
+            .grid-container {
+                padding: 12px;
+            }
+
+            .photo-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+                gap: 8px !important;
+            }
+
+            /* Star button - Bigger touch target on mobile */
+            .photo-card .star-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1.4rem;
+                top: 6px;
+                right: 6px;
+            }
+
+            /* Modal - Full screen on mobile */
+            .modal {
+                padding: 0;
+            }
+
+            .modal-header {
+                padding: 12px;
+                background: var(--bg-secondary);
+                flex-wrap: wrap;
+            }
+
+            .modal-info {
+                font-size: 0.8rem;
+                flex: 1 1 100%;
+                margin-bottom: 8px;
+                word-break: break-all;
+            }
+
+            .modal-actions {
+                flex: 1;
+                justify-content: flex-end;
+            }
+
+            .modal-actions button {
+                font-size: 0.85rem;
+                padding: 8px 12px;
+            }
+
+            .modal-close {
+                font-size: 1.8rem;
+            }
+
+            /* Modal navigation - Bigger touch targets */
+            .modal-nav {
+                font-size: 2.5rem;
+                padding: 30px 20px;
+                background: rgba(0, 0, 0, 0.7);
+            }
+
+            /* Date separator - Smaller on mobile */
+            .date-separator-text {
+                font-size: 0.75rem;
+                letter-spacing: 0.5px;
+            }
+
+            .time-separator-text {
+                font-size: 0.7rem;
+            }
+
+            /* Load more button */
+            .load-more button {
+                padding: 12px 24px;
+                font-size: 0.9rem;
+                width: 100%;
+            }
+
+            /* Hide grid size toggle on mobile (we force small grid) */
+            .grid-size-toggle {
+                display: none;
+            }
+        }
+
+        /* Small phones */
+        @media (max-width: 480px) {
+            .stats {
+                font-size: 0.8rem;
+            }
+
+            .header-filters {
+                gap: 6px;
+            }
+
+            .filter-select {
+                font-size: 0.8rem;
+                padding: 8px;
+            }
+
+            .btn-secondary {
+                font-size: 0.75rem;
+                padding: 8px 10px;
+            }
+
+            .photo-grid {
+                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)) !important;
+                gap: 6px !important;
+            }
+
+            .date-separator {
+                gap: 8px;
+            }
+
+            .date-separator-text {
+                font-size: 0.7rem;
+            }
+
+            .modal-header {
+                padding: 10px;
+            }
+
+            .modal-nav {
+                padding: 25px 15px;
+                font-size: 2rem;
+            }
+        }
+
+        /* Touch-specific improvements */
+        @media (hover: none) and (pointer: coarse) {
+            /* Ensure all interactive elements are touch-friendly (min 44px) */
+            button {
+                min-height: 44px;
+            }
+
+            .photo-card .star-btn {
+                min-width: 44px;
+                min-height: 44px;
+            }
+
+            /* Remove hover effects on touch devices */
+            .photo-card:hover {
+                border-color: transparent;
+            }
+
+            .photo-card:active {
+                opacity: 0.8;
+            }
+
+            /* Better touch feedback */
+            button:active {
+                transform: scale(0.95);
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .welcome {
+                min-height: 50vh;
+                padding: 15px;
+            }
+
+            .photo-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+            }
+
+            .modal-header {
+                padding: 8px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <div class="logo">PicPick <span>Lite</span></div>
+            <div class="stats" id="stats">
+                <span class="stat"><strong id="total-count">0</strong> photos</span>
+                <span class="stat starred">⭐ <strong id="starred-count">0</strong> starred</span>
+            </div>
+        </div>
+        <div class="header-filters hidden" id="header-filters">
+            <select id="folder-filter" class="filter-select">
+                <option value="">All Folders</option>
+            </select>
+            <button class="btn-secondary" id="filter-starred-btn" title="Show starred only">★ Starred Only</button>
+            <div class="grid-size-toggle">
+                <button class="grid-size-btn" data-size="small" title="Small grid">▪▪▪</button>
+                <button class="grid-size-btn active" data-size="medium" title="Medium grid">▪▪</button>
+                <button class="grid-size-btn" data-size="large" title="Large grid">▪</button>
+            </div>
+        </div>
+        <div class="actions">
+            <button class="btn-secondary" id="select-folder-btn">📁 Change Folder</button>
+            <button class="btn-secondary" id="clear-session-btn" title="Start fresh with a new folder">🗑️ Clear Session</button>
+            <button class="btn-secondary" id="export-btn">📤 Export Starred</button>
+        </div>
+    </header>
+
+    <!-- Welcome Screen -->
+    <div class="welcome" id="welcome">
+        <h2>📸 Welcome to PicPick Lite</h2>
+        <p>
+            A simple photo selector. Pick a folder, star your favorites,
+            and export them. No AI, no server – just fast photo selection.
+        </p>
+        <div class="welcome-buttons">
+            <button class="btn-primary" id="open-folder-btn">📁 Select Photo Folder</button>
+        </div>
+        <div class="loading-session hidden" id="loading-session">
+            🔄 Restoring previous session...
+        </div>
+
+        <div class="browser-warning">
+            <strong>⚠️ Chrome or Edge required</strong><br>
+            This app uses the File System Access API which is only available in Chromium browsers.
+        </div>
+
+        <div class="shortcuts">
+            <strong>Keyboard shortcuts:</strong><br>
+            <kbd>←</kbd> <kbd>→</kbd> Navigate &nbsp;|&nbsp;
+            <kbd>S</kbd> or <kbd>Space</kbd> Star &nbsp;|&nbsp;
+            <kbd>Enter</kbd> Open &nbsp;|&nbsp;
+            <kbd>Esc</kbd> Close
+        </div>
+
+        <div class="persistence-info">
+            💾 Your starred selections are saved automatically
+        </div>
+    </div>
+
+    <!-- Photo Grid -->
+    <div class="grid-container" id="grid-container">
+        <div class="photo-grid" id="photo-grid"></div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-header">
+            <div class="modal-info" id="modal-info">Photo 1 of 100</div>
+            <div class="modal-actions">
+                <button class="btn-primary" id="modal-star-btn">⭐ Star</button>
+                <button class="modal-close" id="modal-close">×</button>
+            </div>
+        </div>
+        <div class="modal-image-container">
+            <img id="modal-image" src="" alt="">
+        </div>
+        <button class="modal-nav prev" id="modal-prev">‹</button>
+        <button class="modal-nav next" id="modal-next">›</button>
+    </div>
+
+    <script>
+        // State
+        const state = {
+            dirHandle: null,
+            photos: [],           // { name, handle, starred } - NO url until needed
+            filteredPhotos: [],
+            selectedIndex: 0,
+            modalOpen: false,
+            starredOnly: false,
+            folderFilter: '',
+            // Pagination
+            pageSize: 50,
+            currentPage: 0,
+            loadedUrls: new Map(),  // Cache for loaded image URLs
+            // Date/time tracking
+            lastRenderedDate: null,
+            lastRenderedTime: null,
+            // Grid size
+            gridSize: 'medium'
+        };
+
+        // Elements
+        const els = {
+            welcome: document.getElementById('welcome'),
+            gridContainer: document.getElementById('grid-container'),
+            photoGrid: document.getElementById('photo-grid'),
+            headerFilters: document.getElementById('header-filters'),
+            folderFilter: document.getElementById('folder-filter'),
+            totalCount: document.getElementById('total-count'),
+            starredCount: document.getElementById('starred-count'),
+            filterStarredBtn: document.getElementById('filter-starred-btn'),
+            openFolderBtn: document.getElementById('open-folder-btn'),
+            selectFolderBtn: document.getElementById('select-folder-btn'),
+            exportBtn: document.getElementById('export-btn'),
+            modal: document.getElementById('modal'),
+            modalImage: document.getElementById('modal-image'),
+            modalInfo: document.getElementById('modal-info'),
+            modalStarBtn: document.getElementById('modal-star-btn'),
+            modalClose: document.getElementById('modal-close'),
+            modalPrev: document.getElementById('modal-prev'),
+            modalNext: document.getElementById('modal-next')
+        };
+
+        // IndexedDB for persisting folder handle
+        const DB_NAME = 'picpick-lite';
+        const STORE_NAME = 'handles';
+
+        async function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                request.onupgradeneeded = (e) => {
+                    e.target.result.createObjectStore(STORE_NAME);
+                };
+            });
+        }
+
+        async function saveHandle(handle) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).put(handle, 'dirHandle');
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function getSavedHandle() {
+            try {
+                const db = await openDB();
+                return new Promise((resolve) => {
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const request = tx.objectStore(STORE_NAME).get('dirHandle');
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => resolve(null);
+                });
+            } catch {
+                return null;
+            }
+        }
+
+        // Check browser support
+        function checkSupport() {
+            if (!('showDirectoryPicker' in window)) {
+                alert('Your browser does not support the File System Access API. Please use Chrome or Edge.');
+                return false;
+            }
+            return true;
+        }
+
+        // Open folder
+        async function openFolder() {
+            if (!checkSupport()) return;
+
+            try {
+                state.dirHandle = await window.showDirectoryPicker();
+                await saveHandle(state.dirHandle); // Save for next session
+                await loadPhotos();
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Error opening folder:', err);
+                    alert('Error opening folder: ' + err.message);
+                }
+            }
+        }
+
+        // Try to restore previous session
+        async function tryRestoreSession() {
+            const handle = await getSavedHandle();
+            if (!handle) return false;
+
+            try {
+                // Request permission to access the saved folder
+                const permission = await handle.requestPermission({ mode: 'read' });
+                if (permission === 'granted') {
+                    state.dirHandle = handle;
+                    await loadPhotos();
+                    return true;
+                }
+            } catch (err) {
+                console.log('Could not restore session:', err);
+            }
+            return false;
+        }
+
+        // Load photos from folder (including subfolders) - FAST, no image loading
+        async function loadPhotos() {
+            state.photos = [];
+            state.loadedUrls.clear();
+            state.currentPage = 0;
+            state.folderFilter = '';
+            els.photoGrid.innerHTML = '<div class="loading">Scanning folders...</div>';
+            els.welcome.classList.add('hidden');
+            els.gridContainer.classList.add('visible');
+            els.headerFilters.classList.remove('hidden');
+
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
+            // Load saved starred state
+            const savedStarred = JSON.parse(localStorage.getItem('picpick-starred') || '{}');
+
+            // Recursive function to scan folders - collects metadata + file date
+            async function scanFolder(dirHandle, path = '') {
+                for await (const entry of dirHandle.values()) {
+                    if (entry.kind === 'file') {
+                        const ext = '.' + entry.name.split('.').pop().toLowerCase();
+                        if (imageExtensions.includes(ext)) {
+                            const fullPath = path ? `${path}/${entry.name}` : entry.name;
+                            // Get file to access lastModified date
+                            const file = await entry.getFile();
+                            state.photos.push({
+                                name: entry.name,
+                                path: fullPath,
+                                folder: path || '/',
+                                handle: entry,
+                                starred: savedStarred[fullPath] || false,
+                                date: new Date(file.lastModified)
+                            });
+
+                            // Update loading progress
+                            if (state.photos.length % 100 === 0) {
+                                els.photoGrid.innerHTML = `<div class="loading">Scanning... ${state.photos.length} photos found</div>`;
+                            }
+                        }
+                    } else if (entry.kind === 'directory') {
+                        // Recursively scan subdirectory
+                        const subPath = path ? `${path}/${entry.name}` : entry.name;
+                        await scanFolder(entry, subPath);
+                    }
+                }
+            }
+
+            await scanFolder(state.dirHandle);
+
+            // Sort by date (chronological order)
+            state.photos.sort((a, b) => a.date - b.date);
+
+            populateFolderFilter();
+
+            // Restore saved folder filter
+            const savedFilter = localStorage.getItem('picpick-folder-filter');
+            if (savedFilter && state.photos.some(p => p.folder === savedFilter)) {
+                state.folderFilter = savedFilter;
+                els.folderFilter.value = savedFilter;
+            }
+
+            // Restore saved grid size
+            const savedGridSize = localStorage.getItem('picpick-grid-size');
+            if (savedGridSize) {
+                state.gridSize = savedGridSize;
+                document.querySelectorAll('.grid-size-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.size === savedGridSize);
+                });
+                els.photoGrid.classList.remove('grid-small', 'grid-medium', 'grid-large');
+                if (savedGridSize !== 'medium') {
+                    els.photoGrid.classList.add('grid-' + savedGridSize);
+                }
+            }
+
+            applyFilters();
+            updateStats();
+        }
+
+        // Create thumbnail using Canvas (resize in browser)
+        function createThumbnail(file, maxSize = 300) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.onload = () => {
+                    let w = img.width, h = img.height;
+                    if (w > h) { if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; } }
+                    else { if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; } }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    URL.revokeObjectURL(url);
+                    canvas.toBlob(blob => resolve(URL.createObjectURL(blob)), 'image/jpeg', 0.7);
+                };
+                img.onerror = () => resolve(url);
+                img.src = url;
+            });
+        }
+
+        // Get thumbnail (for grid)
+        async function getThumbnail(photo) {
+            const key = 'thumb_' + photo.path;
+            if (state.loadedUrls.has(key)) return state.loadedUrls.get(key);
+            const file = await photo.handle.getFile();
+            const url = await createThumbnail(file, 300);
+            state.loadedUrls.set(key, url);
+            return url;
+        }
+
+        // Get full image (for modal)
+        async function getFullImage(photo) {
+            const key = 'full_' + photo.path;
+            if (state.loadedUrls.has(key)) return state.loadedUrls.get(key);
+            const file = await photo.handle.getFile();
+            const url = URL.createObjectURL(file);
+            state.loadedUrls.set(key, url);
+            return url;
+        }
+
+        // Apply filters
+        function applyFilters() {
+            state.filteredPhotos = state.photos.filter(p => {
+                if (state.starredOnly && !p.starred) return false;
+                if (state.folderFilter && p.folder !== state.folderFilter) return false;
+                return true;
+            });
+            renderGrid();
+        }
+
+        // Populate folder dropdown
+        function populateFolderFilter() {
+            const folders = [...new Set(state.photos.map(p => p.folder))].sort();
+            els.folderFilter.innerHTML = '<option value="">All Folders</option>';
+            folders.forEach(folder => {
+                const count = state.photos.filter(p => p.folder === folder).length;
+                const option = document.createElement('option');
+                option.value = folder;
+                option.textContent = `${folder === '/' ? '/ (root)' : folder} (${count})`;
+                els.folderFilter.appendChild(option);
+            });
+        }
+
+        // Render grid with pagination and date/time separators
+        async function renderGrid(append = false) {
+            if (!append) {
+                els.photoGrid.innerHTML = '';
+                state.currentPage = 0;
+                state.lastRenderedDate = null;
+                state.lastRenderedTime = null;
+            }
+
+            if (state.filteredPhotos.length === 0) {
+                els.photoGrid.innerHTML = '<div class="loading">No photos found</div>';
+                return;
+            }
+
+            const start = state.currentPage * state.pageSize;
+            const end = Math.min(start + state.pageSize, state.filteredPhotos.length);
+            const photosToRender = state.filteredPhotos.slice(start, end);
+
+            for (let i = 0; i < photosToRender.length; i++) {
+                const photo = photosToRender[i];
+                const index = start + i;
+
+                // Date separator
+                const photoDate = photo.date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                if (photoDate !== state.lastRenderedDate) {
+                    const dateSep = document.createElement('div');
+                    dateSep.className = 'date-separator';
+                    if (state.lastRenderedDate !== null) {
+                        dateSep.classList.add('has-margin');
+                    }
+                    dateSep.innerHTML = `<span class="date-separator-text">${photoDate}</span>`;
+                    els.photoGrid.appendChild(dateSep);
+                    state.lastRenderedDate = photoDate;
+                    state.lastRenderedTime = photo.date;
+                }
+                // Time separator (>30 min gap within same day)
+                else if (state.lastRenderedTime) {
+                    const timeDiff = (photo.date - state.lastRenderedTime) / (1000 * 60);
+                    if (timeDiff > 30) {
+                        const timeStr = photo.date.toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+                        const timeSep = document.createElement('div');
+                        timeSep.className = 'time-separator';
+                        timeSep.innerHTML = `<span class="time-separator-text">⏱ ${timeStr}</span>`;
+                        els.photoGrid.appendChild(timeSep);
+                    }
+                }
+                state.lastRenderedTime = photo.date;
+
+                const card = document.createElement('div');
+                card.className = `photo-card ${photo.starred ? 'starred' : ''} ${index === state.selectedIndex ? 'selected' : ''}`;
+                card.dataset.index = index;
+
+                // Placeholder while loading
+                card.innerHTML = `
+                    <div class="img-placeholder">Loading...</div>
+                    <button class="star-btn">★</button>
+                `;
+
+                card.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('star-btn')) {
+                        toggleStar(index);
+                    } else {
+                        state.selectedIndex = index;
+                        openModal();
+                    }
+                });
+
+                els.photoGrid.appendChild(card);
+
+                // Load thumbnail asynchronously (300px, compressed)
+                getThumbnail(photo).then(url => {
+                    const placeholder = card.querySelector('.img-placeholder');
+                    if (placeholder) {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.alt = photo.name;
+                        img.loading = 'lazy';
+                        placeholder.replaceWith(img);
+                    }
+                });
+            }
+
+            // Add "Load More" button if there are more photos
+            if (end < state.filteredPhotos.length) {
+                const loadMoreBtn = document.createElement('div');
+                loadMoreBtn.className = 'load-more';
+                loadMoreBtn.innerHTML = `<button class="btn-secondary" id="load-more-btn">Load More (${state.filteredPhotos.length - end} remaining)</button>`;
+                loadMoreBtn.querySelector('button').addEventListener('click', () => {
+                    loadMoreBtn.remove();
+                    state.currentPage++;
+                    renderGrid(true);
+                });
+                els.photoGrid.appendChild(loadMoreBtn);
+            }
+        }
+
+        // Toggle star
+        function toggleStar(index) {
+            const photo = state.filteredPhotos[index];
+            photo.starred = !photo.starred;
+
+            // Save to localStorage using full path as key
+            const saved = JSON.parse(localStorage.getItem('picpick-starred') || '{}');
+            if (photo.starred) {
+                saved[photo.path] = true;
+            } else {
+                delete saved[photo.path];
+            }
+            localStorage.setItem('picpick-starred', JSON.stringify(saved));
+
+            updateStats();
+
+            // Update UI - query only photo cards, not separators
+            const cards = els.photoGrid.querySelectorAll('.photo-card');
+            if (cards[index]) {
+                cards[index].classList.toggle('starred', photo.starred);
+            }
+
+            updateModalStarBtn();
+        }
+
+        // Update stats
+        function updateStats() {
+            els.totalCount.textContent = state.photos.length;
+            els.starredCount.textContent = state.photos.filter(p => p.starred).length;
+        }
+
+        // Open modal
+        function openModal() {
+            state.modalOpen = true;
+            els.modal.classList.add('visible');
+            updateModal();
+        }
+
+        // Close modal
+        function closeModal() {
+            state.modalOpen = false;
+            els.modal.classList.remove('visible');
+            updateSelection();
+        }
+
+        // Update modal
+        async function updateModal() {
+            const photo = state.filteredPhotos[state.selectedIndex];
+            if (!photo) return;
+
+            els.modalInfo.textContent = `${photo.path} (${state.selectedIndex + 1} of ${state.filteredPhotos.length})`;
+            updateModalStarBtn();
+
+            // Load full resolution image for modal
+            els.modalImage.src = '';
+            const url = await getFullImage(photo);
+            els.modalImage.src = url;
+        }
+
+        // Update modal star button
+        function updateModalStarBtn() {
+            const photo = state.filteredPhotos[state.selectedIndex];
+            if (!photo) return;
+            els.modalStarBtn.textContent = photo.starred ? '★ Starred' : '☆ Star';
+            els.modalStarBtn.classList.toggle('btn-primary', photo.starred);
+            els.modalStarBtn.classList.toggle('btn-secondary', !photo.starred);
+        }
+
+        // Update selection in grid
+        function updateSelection() {
+            const cards = els.photoGrid.querySelectorAll('.photo-card');
+            cards.forEach((card, i) => {
+                card.classList.toggle('selected', i === state.selectedIndex);
+            });
+
+            // Scroll into view
+            if (cards[state.selectedIndex]) {
+                cards[state.selectedIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // Navigate
+        function navigate(direction) {
+            if (direction === 'next' && state.selectedIndex < state.filteredPhotos.length - 1) {
+                state.selectedIndex++;
+            } else if (direction === 'prev' && state.selectedIndex > 0) {
+                state.selectedIndex--;
+            }
+
+            if (state.modalOpen) {
+                updateModal();
+            } else {
+                updateSelection();
+            }
+        }
+
+        // Export starred photos (preserves folder structure)
+        async function exportStarred() {
+            const starred = state.photos.filter(p => p.starred);
+
+            if (starred.length === 0) {
+                alert('No starred photos to export!');
+                return;
+            }
+
+            if (!confirm(`Export ${starred.length} starred photos?`)) {
+                return;
+            }
+
+            try {
+                const destHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+
+                let exported = 0;
+                const progressDiv = document.createElement('div');
+                progressDiv.className = 'loading';
+                progressDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-secondary);padding:30px;border-radius:10px;z-index:2000;';
+                document.body.appendChild(progressDiv);
+
+                for (const photo of starred) {
+                    try {
+                        progressDiv.textContent = `Exporting ${exported + 1}/${starred.length}... ${photo.name}`;
+
+                        const file = await photo.handle.getFile();
+
+                        // Create subfolder if needed
+                        let targetDir = destHandle;
+                        if (photo.folder && photo.folder !== '/') {
+                            const folders = photo.folder.split('/');
+                            for (const folder of folders) {
+                                targetDir = await targetDir.getDirectoryHandle(folder, { create: true });
+                            }
+                        }
+
+                        const newHandle = await targetDir.getFileHandle(photo.name, { create: true });
+                        const writable = await newHandle.createWritable();
+                        await writable.write(file);
+                        await writable.close();
+                        exported++;
+                    } catch (err) {
+                        console.error(`Error exporting ${photo.path}:`, err);
+                    }
+                }
+
+                progressDiv.remove();
+                alert(`✅ Exported ${exported} photos!`);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Export error:', err);
+                    alert('Error exporting: ' + err.message);
+                }
+            }
+        }
+
+        // Elements
+        const loadingSession = document.getElementById('loading-session');
+        const clearSessionBtn = document.getElementById('clear-session-btn');
+
+        // Clear session function
+        async function clearSession() {
+            if (!confirm('This will clear all starred selections and start fresh. Continue?')) {
+                return;
+            }
+
+            // Clear IndexedDB
+            const db = await openDB();
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).clear();
+
+            // Clear localStorage
+            localStorage.removeItem('picpick-starred');
+            localStorage.removeItem('picpick-folder-filter');
+
+            // Reset state
+            state.dirHandle = null;
+            state.photos = [];
+            state.filteredPhotos = [];
+            state.loadedUrls.clear();
+
+            // Show welcome screen
+            els.welcome.classList.add('visible');
+            els.gridContainer.classList.remove('visible');
+            els.headerFilters.classList.add('hidden');
+            updateStats();
+        }
+
+        // Event listeners
+        els.openFolderBtn.addEventListener('click', openFolder);
+        els.selectFolderBtn.addEventListener('click', openFolder);
+        els.exportBtn.addEventListener('click', exportStarred);
+        clearSessionBtn.addEventListener('click', clearSession);
+
+        // Auto-resume on page load
+        (async function autoResume() {
+            const handle = await getSavedHandle();
+            if (handle) {
+                loadingSession.classList.remove('hidden');
+
+                try {
+                    // Request permission silently
+                    const permission = await handle.requestPermission({ mode: 'read' });
+                    if (permission === 'granted') {
+                        state.dirHandle = handle;
+                        await loadPhotos();
+                        return;
+                    }
+                } catch (err) {
+                    console.log('Could not auto-restore:', err);
+                }
+
+                // If failed, show the welcome screen
+                loadingSession.classList.add('hidden');
+                els.welcome.classList.add('visible');
+                els.openFolderBtn.classList.remove('hidden');
+            } else {
+                // No saved session, show welcome screen
+                els.welcome.classList.add('visible');
+            }
+        })();
+
+        els.filterStarredBtn.addEventListener('click', () => {
+            state.starredOnly = !state.starredOnly;
+            els.filterStarredBtn.classList.toggle('active', state.starredOnly);
+            state.selectedIndex = 0;
+            applyFilters();
+        });
+
+        els.folderFilter.addEventListener('change', (e) => {
+            state.folderFilter = e.target.value;
+            state.selectedIndex = 0;
+            localStorage.setItem('picpick-folder-filter', state.folderFilter);
+            applyFilters();
+        });
+
+        // Grid size toggle
+        document.querySelectorAll('.grid-size-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const size = btn.dataset.size;
+                state.gridSize = size;
+                localStorage.setItem('picpick-grid-size', size);
+
+                // Update active button
+                document.querySelectorAll('.grid-size-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Update grid class
+                els.photoGrid.classList.remove('grid-small', 'grid-medium', 'grid-large');
+                if (size !== 'medium') {
+                    els.photoGrid.classList.add('grid-' + size);
+                }
+            });
+        });
+
+        els.modalClose.addEventListener('click', closeModal);
+        els.modalPrev.addEventListener('click', () => navigate('prev'));
+        els.modalNext.addEventListener('click', () => navigate('next'));
+        els.modalStarBtn.addEventListener('click', () => toggleStar(state.selectedIndex));
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+
+            if (state.modalOpen) {
+                switch (e.key) {
+                    case 'Escape':
+                        closeModal();
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        navigate('prev');
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        navigate('next');
+                        break;
+                    case 's':
+                    case 'S':
+                    case ' ':
+                        e.preventDefault();
+                        toggleStar(state.selectedIndex);
+                        break;
+                }
+            } else if (state.photos.length > 0) {
+                switch (e.key) {
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        if (state.selectedIndex > 0) {
+                            state.selectedIndex--;
+                            updateSelection();
+                        }
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        if (state.selectedIndex < state.filteredPhotos.length - 1) {
+                            state.selectedIndex++;
+                            updateSelection();
+                        }
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        openModal();
+                        break;
+                    case 's':
+                    case 'S':
+                    case ' ':
+                        e.preventDefault();
+                        toggleStar(state.selectedIndex);
+                        break;
+                }
+            }
+        });
+
+        // Click outside modal to close
+        els.modal.addEventListener('click', (e) => {
+            if (e.target === els.modal) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
+
